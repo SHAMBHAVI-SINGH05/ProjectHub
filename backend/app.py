@@ -11,10 +11,12 @@ from routes.conversation_routes import conversation_bp
 from routes.user_routes import users_bp
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = SECRET_KEY
-app.config["JWT_SECRET_KEY"] = JWT_SECRET_KEY
 
-CORS(app)
+# LOAD EVERYTHING FROM config.py
+app.config.from_object("config")
+
+CORS(app, supports_credentials=True)
+
 
 jwt.init_app(app)
 socketio.init_app(app)

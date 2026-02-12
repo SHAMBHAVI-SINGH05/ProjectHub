@@ -1,10 +1,15 @@
-from flask import Blueprint, jsonify
+
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from bson import ObjectId
 from extensions import users_collection
 
 users_bp = Blueprint("users", __name__)
+from flask_jwt_extended import get_jwt_identity
 
+@jwt_required()
+def get_me():
+    print("JWT OK:", get_jwt_identity())
 @users_bp.route("/match", methods=["GET"])
 @jwt_required()
 def match_users():
@@ -29,24 +34,6 @@ def match_users():
     matches.sort(key=lambda x: x["score"], reverse=True)
 
     return jsonify({"matches": matches[:10]})
-@users_bp.route("/me", methods=["GET"])
-@jwt_required()
-def get_me():
-    user_id = get_jwt_identity()
-    user = users_collection.find_one({"_id": ObjectId(user_id)})
-
-    return jsonify({
-        "name": user.get("name"),
-        "email": user.get("email"),
-        "role": user.get("role"),
-        "bio": user.get("bio"),
-        "skills": user.get("skills", []),
-        "interests": user.get("interests", []),
-        "lookingFor": user.get("lookingFor", []),
-        "projects": [],
-        "connections": []
-    })
-
 
 @users_bp.route("/update-bio", methods=["POST"])
 @jwt_required()

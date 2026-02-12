@@ -7,7 +7,7 @@ import TeamFinder from './TeamFinder';
 import FundingPortal from './fundingPortal';
 import { io, Socket } from "socket.io-client";
 import { useEffect } from "react";
-import Profile from './Profile.tsx';
+import Profile from './Profile';
 interface HomeProps {
   user: User;
   onLogout: () => void;
@@ -63,7 +63,7 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
 
   // Add Team Finder state
   useEffect(() => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("csh_token");
   if (!token) return;
 
   const s = io("http://localhost:5000", {
@@ -130,7 +130,7 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
     }
   ]);
 useEffect(() => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("csh_token");
   if (!token) {
     console.warn("No token yet, skipping conversations fetch");
     return;

@@ -9,23 +9,29 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
   const [profile, setProfile] = useState<any>(null);
   const [editingBio, setEditingBio] = useState(false);
   const [bio, setBio] = useState("");
-
   useEffect(() => {
-    const token = localStorage.getItem("csh_token");
+  const token = localStorage.getItem("csh_token");
 
-    fetch(`http://127.0.0.1:5000/api/users/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+  if (!token) {
+    console.log("No token yet, waiting...");
+    return;
+  }
+
+  fetch(`http://127.0.0.1:5000/api/users/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+    .then(res => {
+      if (!res.ok) throw new Error("Unauthorized");
+      return res.json();
     })
-      .then(res => res.json())
-      .then(data => {
-        setProfile(data);
-        setBio(data.bio || "");
-      })
-      .catch(err => console.error(err));
-  }, []);
-
+    .then(data => {
+      setProfile(data);
+      setBio(data.bio || "");
+    })
+    .catch(err => console.error(err));
+}, []);
   const saveBio = async () => {
     const token = localStorage.getItem("csh_token");
 

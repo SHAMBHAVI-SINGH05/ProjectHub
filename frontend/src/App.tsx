@@ -27,6 +27,7 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setUser(null)
     localStorage.removeItem('csh_user')
+    localStorage.removeItem('csh_token')
   }
 
   // Navbar handlers (simple navigation)
@@ -36,22 +37,7 @@ const App: React.FC = () => {
   const onLoginClick = () => window.location.assign('/signin')
   const onRegisterClick = () => window.location.assign('/register')
 
-  // SignIn handler (calls backend)
-  const handleSignIn = async (email: string, password: string) => {
-    try {
-      const resp = await axios.post('http://127.0.0.1:5000/api/auth/login', { email, password })
-      const { access_token, user_id } = resp.data || {}
-      // Build a minimal frontend user object from email; backend currently returns id + token
-      const userObj = { id: user_id || Math.random().toString(36).slice(2, 9), name: email.split('@')[0], email, role: 'student' }
-      // persist token + user
-      if (access_token) localStorage.setItem('csh_token', access_token)
-      handleLogin(userObj)
-      window.location.assign('/')
-    } catch (err: any) {
-      console.error('Sign-in failed', err?.response?.data || err)
-      alert(err?.response?.data?.error || 'Sign-in failed')
-    }
-  }
+ 
 
   // Register handler (calls backend)
   const handleRegister = async (userData: any) => {
@@ -77,7 +63,22 @@ const App: React.FC = () => {
       alert(err?.response?.data?.error || 'Registration failed')
     }
   }
-
+ // SignIn handler (calls backend)
+  const handleSignIn = async (email: string, password: string) => {
+    try {
+      const resp = await axios.post('http://127.0.0.1:5000/api/auth/login', { email, password })
+      const { access_token, user_id } = resp.data || {}
+      // Build a minimal frontend user object from email; backend currently returns id + token
+      const userObj = { id: user_id || Math.random().toString(36).slice(2, 9), name: email.split('@')[0], email, role: 'student' }
+      // persist  + user
+      if (access_token) localStorage.setItem('csh_token', access_token)
+      handleLogin(userObj)
+      window.location.assign('/')
+    } catch (err: any) {
+      console.error('Sign-in failed', err?.response?.data || err)
+      alert(err?.response?.data?.error || 'Sign-in failed')
+    }
+  }
   return (
     <BrowserRouter>
       <Navbar

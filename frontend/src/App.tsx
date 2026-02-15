@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import axios from 'axios'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './App.css'
 
 import Navbar from './components/Navbar'
@@ -80,7 +80,7 @@ const App: React.FC = () => {
     }
   }
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Navbar
         onFeaturesClick={onFeaturesClick}
         onStatsClick={onStatsClick}
@@ -93,7 +93,7 @@ const App: React.FC = () => {
         <Route path="/register" element={<Register onRegister={handleRegister} onSwitchToLogin={() => window.location.assign('/signin')} />} />
         <Route path="/" element={user ? <Home user={user} onLogout={handleLogout} /> : <Navigate to="/signin" replace />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
 

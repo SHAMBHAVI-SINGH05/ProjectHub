@@ -12,13 +12,7 @@ interface HomeProps {
   user: User;
   onLogout: () => void;
 }
-type SocketMessage = {
-  id: string;
-  conversation_id: string;
-  sender_id: string;
-  text: string;
-  timestamp: string;
-};
+
 
 const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
   // Update activeTab to include 'funding'
@@ -26,7 +20,7 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
   'dashboard' | 'projects' | 'network' | 'ai' | 'funding' | 'profile'
 >('dashboard');
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [connections, setConnections] = useState<string[]>([]);
+  const [connections] = useState<string[]>([]);
    const [showCreateProject, setShowCreateProject] = useState(false);
   const [projects, setProjects] = useState<Project[]>([
     {

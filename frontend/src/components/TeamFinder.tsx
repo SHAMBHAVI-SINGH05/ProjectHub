@@ -16,7 +16,7 @@ const TeamFinder: React.FC<TeamFinderProps> = ({ currentUser, onSendConnection }
     availability: 'flexible'
   });
   const [users, setUsers] = useState<UserProfile[]>([]);
-const [loading, setLoading] = useState(true);
+const [,setLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);

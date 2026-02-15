@@ -5,7 +5,7 @@ interface ProfileProps {
   user: any;
 }
 
-const Profile: React.FC<ProfileProps> = ({ user }) => {
+const Profile: React.FC<ProfileProps> = () => {
   const [profile, setProfile] = useState<any>(null);
   const [editingBio, setEditingBio] = useState(false);
   const [bio, setBio] = useState("");

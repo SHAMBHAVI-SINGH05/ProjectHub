@@ -94,7 +94,7 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
           </div>
           <p className="profile-email">{profile.email}</p>
 
-          {/* Bio */}
+          {/* ✅ FIXED BIO SECTION */}
           {editingBio ? (
             <div className="profile-bio-edit">
               <textarea
@@ -107,12 +107,25 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
                 <button className="p-btn-primary" onClick={saveBio} disabled={saving}>
                   {saving ? "Saving..." : "Save"}
                 </button>
-                <button className="p-btn-ghost" onClick={() => { setEditingBio(false); setBio(profile.bio || ""); }}>
+                <button
+                  className="p-btn-ghost"
+                  onClick={() => {
+                    setEditingBio(false);
+                    setBio(profile.bio || "");
+                  }}
+                >
                   Cancel
                 </button>
-              </>
-            )}
-          </div>
+              </div>
+            </div>
+          ) : (
+            <div className="profile-bio-display">
+              <p>{profile.bio || "No bio added yet."}</p>
+              <button className="p-btn-ghost" onClick={() => setEditingBio(true)}>
+                Edit Bio
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -134,7 +147,6 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
       {/* Main grid */}
       <div className="profile-main-grid">
 
-        {/* Left col */}
         <div className="profile-left-col">
           <div className="profile-card">
             <h3>Skills</h3>
@@ -161,7 +173,6 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
           </div>
         </div>
 
-        {/* Right col — Projects */}
         <div className="profile-right-col">
           <div className="profile-card profile-projects-card">
             <div className="profile-card-header">

@@ -274,8 +274,12 @@ const WORKSPACE_CHAT_SUGGESTIONS = [
       return;
     }
 
+    let timedOut = false;
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+    const timeoutId = window.setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, 8000);
 
     fetch(`${import.meta.env.VITE_API_URL}/api/projects/my`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -314,12 +318,15 @@ const WORKSPACE_CHAT_SUGGESTIONS = [
         setProjectError("");
       })
       .catch((error: Error) => {
-        console.error("Projects fetch failed:", error);
         if (error.name === "AbortError") {
-          setProjectError("Project request timed out. Make sure your backend is running on http://localhost:10000.");
-        } else {
-          setProjectError(error.message || "Failed to load projects.");
+          if (timedOut) {
+            setProjectError("Project request timed out. Make sure your backend is running on http://localhost:10000.");
+          }
+          // Cleanup abort (component unmount) — silently ignore
+          return;
         }
+        console.error("Projects fetch failed:", error);
+        setProjectError(error.message || "Failed to load projects.");
       })
       .finally(() => {
         window.clearTimeout(timeoutId);
@@ -343,8 +350,12 @@ const WORKSPACE_CHAT_SUGGESTIONS = [
           }))
         );
       })
-      .catch((err) => console.error("Failed to load project invites:", err));
-     
+      .catch((err) => {
+        if ((err as Error).name !== "AbortError") {
+          console.error("Failed to load project invites:", err);
+        }
+      });
+
     return () => {
       window.clearTimeout(timeoutId);
       controller.abort();

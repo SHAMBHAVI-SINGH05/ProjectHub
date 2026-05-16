@@ -4,6 +4,13 @@ import pymongo
 from config import MONGO_URI
 import os
 from groq import Groq
+import dns.resolver
+
+# Local routers often can't resolve MongoDB Atlas SRV/TXT records.
+# Force Google DNS so the connection string always resolves correctly.
+dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
+dns.resolver.default_resolver.nameservers = ['8.8.8.8', '8.8.4.4']
+
 jwt = JWTManager()
 socketio = SocketIO(cors_allowed_origins="*", async_mode="threading")
 
@@ -21,4 +28,3 @@ project_activity_collection = db.get_collection("project_activity")
 notifications_collection = db["notifications"]
 knowledge_chunks_collection = db.get_collection("knowledge_chunks")
 gemini_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-print("API KEY:", os.getenv("GROQ_API_KEY"))

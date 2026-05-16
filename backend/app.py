@@ -15,6 +15,7 @@ from routes.notification_routes import notifications_bp
 from apscheduler.schedulers.background import BackgroundScheduler
 from jobs.reminders import send_inactivity_reminders
 from routes.mentorship_routes import mentorship_bp
+from routes.matchmaking_routes import matchmaking_bp
 import atexit
 import os
 app = Flask(__name__)
@@ -27,7 +28,10 @@ CORS(
     supports_credentials=True,
     origins=[
         "http://localhost:5173",
-        "https://tanushreenerella.github.io"
+        "http://localhost:5174",
+          "http://localhost:5175",
+        "https://tanushreenerella.github.io",
+        "https://shambhavi-singh05.github.io",
     ]
 )
 
@@ -47,6 +51,7 @@ app.register_blueprint(tasks_bp, url_prefix="/api/tasks")
 app.register_blueprint(funding_bp, url_prefix="/api/funding")
 app.register_blueprint(notifications_bp, url_prefix="/api/notifications")
 app.register_blueprint(mentorship_bp, url_prefix="/api/mentorship")
+app.register_blueprint(matchmaking_bp, url_prefix="/api/match")
 @app.route("/")
 def home():
     return {"message": "ProjectHub backend is running 🚀"}

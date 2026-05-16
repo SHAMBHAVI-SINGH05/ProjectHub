@@ -42,8 +42,13 @@ const App: React.FC = () => {
           email: profile.email || user?.email || '',
           role: String(profile.role || user?.role || 'student').trim().toLowerCase()
         })
-      } catch (err) {
-        console.warn('Could not refresh user profile', err)
+      } catch (err: any) {
+        const status = err?.response?.status
+        if (status === 401 || status === 404) {
+          handleLogout()
+        } else {
+          console.warn('Could not refresh user profile', err)
+        }
       }
     }
     refreshUser()

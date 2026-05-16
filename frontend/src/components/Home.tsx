@@ -495,10 +495,10 @@ useEffect(() => {
                 </div>
               </div>
               <div className="stat-card">
-                <div className="stat-icon">🤝</div>
+                <div className="stat-icon">⚡</div>
                 <div className="stat-info">
-                  <h3>{isMentor ? 'Mentorship' : '12'}</h3>
-                  <p>{isMentor ? 'Mentorship Activity' : 'AI Analyses'}</p>
+                  <h3>{user.skills?.length || 0}</h3>
+                  <p>{isMentor ? 'Skills Listed' : 'Skills Listed'}</p>
                 </div>
               </div>
             </div>

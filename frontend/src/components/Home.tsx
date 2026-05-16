@@ -1,18 +1,18 @@
 // src/components/Home.tsx
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { User, Project, UserProfile, FundingApplication, Conversation, Message } from '../types/index.ts';
 import './Home.css';
 import AIProposalAssistant from './AIProposalAssistant';
 import TeamFinder from './TeamFinder';
-import FundingPortal from './FundingPortal';
+import FundingPortal from './fundingPortal';
 import { FundingService } from '../services/fundingService';
 import Chat from './Chat';
 import { io, Socket } from "socket.io-client";
-import { useEffect } from "react";
 import Profile from './Profile';
 import Projects from './Projects.tsx';
 import Notifications from "./Notifications";
 import Mentorship from './Mentorship';
+import Matchmaking from './Matchmaking';
 interface HomeProps {
   user: User;
   onLogout: () => void;
@@ -34,7 +34,7 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
 
   // Update activeTab to include 'funding' and 'chat'
   const [activeTab, setActiveTab] = useState<
-  'dashboard' | 'projects' | 'network' | 'ai' | 'funding' | 'chat' | 'profile' | 'mentorship'
+  'dashboard' | 'projects' | 'network' | 'ai' | 'funding' | 'chat' | 'profile' | 'mentorship' | 'matchmaking'
 >('dashboard');
   const [socket, setSocket] = useState<Socket | null>(null);
   const [, setConnections] = useState<string[]>([]);
@@ -55,8 +55,10 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
   if (!token) return;
 
   const s = io(`${import.meta.env.VITE_API_URL}`, {
-  query: { token }
-});
+    query: { token },
+    transports: ['polling', 'websocket'],
+    upgrade: true,
+  });
 
   setSocket(s);
 
@@ -324,10 +326,19 @@ useEffect(() => {
   }
 
   if (type.startsWith("project_") || type.startsWith("task_") || type === "member_joined_project") {
-    if (notification.project_id) {
-      localStorage.setItem("projecthub_open_project_id", notification.project_id);
+    if (isMentor) {
+      setActiveTab("mentorship");
+    } else {
+      if (notification.project_id) {
+        localStorage.setItem("projecthub_open_project_id", notification.project_id);
+      }
+      setActiveTab("projects");
     }
-    setActiveTab("projects");
+    return;
+  }
+
+  if (type === "match_request_received" || type === "match_mutual") {
+    setActiveTab("matchmaking");
     return;
   }
 
@@ -365,7 +376,13 @@ useEffect(() => {
                 >
                   Network
                 </button>
-                <button 
+                <button
+                  className={`nav-item ${activeTab === 'matchmaking' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('matchmaking')}
+                >
+                  🔥 Match
+                </button>
+                <button
                   className={`nav-item ${activeTab === 'chat' ? 'active' : ''}`}
                   onClick={() => setActiveTab('chat')}
                 >
@@ -404,7 +421,13 @@ useEffect(() => {
                 >
                   🤖 AI Assistant
                 </button>
-                <button 
+                <button
+                  className={`nav-item ${activeTab === 'matchmaking' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('matchmaking')}
+                >
+                  🔥 Match
+                </button>
+                <button
                   className={`nav-item ${activeTab === 'chat' ? 'active' : ''}`}
                   onClick={() => setActiveTab('chat')}
                 >
@@ -435,7 +458,7 @@ useEffect(() => {
            />
 
            <div className="user-info">
-             <span className="user-name">Welcome, {user.name}</span>
+             <span className="user-name">{user.name}</span>
              <span className="user-role">{user.role}</span>
            </div>
 
@@ -462,31 +485,31 @@ useEffect(() => {
 
             <div className="stats-cards">
               <div className="stat-card">
-                <div className="stat-icon">📊</div>
+                <div className="stat-icon">{isMentor ? '🎓' : '📊'}</div>
                 <div className="stat-info">
-                 <h3>{projects.length}</h3>
-                  <p>Active Projects</p>
+                  <h3>{isMentor ? chatUsers.length : projects.length}</h3>
+                  <p>{isMentor ? 'Students Mentored' : 'Active Projects'}</p>
                 </div>
               </div>
               <div className="stat-card">
                 <div className="stat-icon">👥</div>
                 <div className="stat-info">
                   <h3>{chatUsers.length}</h3>
-                  <p>{isMentor ? 'Mentees' : 'Connections'}</p>
+                  <p>{isMentor ? 'Connections' : 'Connections'}</p>
                 </div>
               </div>
               <div className="stat-card">
-                <div className="stat-icon">💰</div>
+                <div className="stat-icon">{isMentor ? '📝' : '💰'}</div>
                 <div className="stat-info">
-                  <h3>{fundingApplications.length}</h3>
-                  <p>Funding Applications</p>
+                  <h3>{isMentor ? 0 : fundingApplications.length}</h3>
+                  <p>{isMentor ? 'Pending Requests' : 'Funding Applications'}</p>
                 </div>
               </div>
               <div className="stat-card">
-                <div className="stat-icon">🤝</div>
+                <div className="stat-icon">⚡</div>
                 <div className="stat-info">
-                  <h3>{isMentor ? 'Mentorship' : '12'}</h3>
-                  <p>{isMentor ? 'Mentorship Activity' : 'AI Analyses'}</p>
+                  <h3>{user.skills?.length || 0}</h3>
+                  <p>Skills Listed</p>
                 </div>
               </div>
             </div>
@@ -496,23 +519,29 @@ useEffect(() => {
               <div className="action-buttons">
                 {isMentor ? (
                   <>
-                    <button 
+                    <button
                       className="action-btn secondary"
                       onClick={() => setActiveTab('mentorship')}
                     >
                       🧑‍🏫 Review Mentorship Requests
                     </button>
-                    <button 
+                    <button
                       className="action-btn secondary"
                       onClick={() => setActiveTab('network')}
                     >
                       👥 Manage Connections
                     </button>
-                    <button 
+                    <button
                       className="action-btn secondary"
-                      onClick={() => setActiveTab('projects')}
+                      onClick={() => setActiveTab('matchmaking')}
                     >
-                      📁 View My Projects
+                      🔥 Find Students to Mentor
+                    </button>
+                    <button
+                      className="action-btn secondary"
+                      onClick={() => setActiveTab('profile')}
+                    >
+                      👤 Edit My Profile
                     </button>
                   </>
                 ) : (
@@ -550,6 +579,50 @@ useEffect(() => {
                 )}
               </div>
             </div>
+
+            {!isMentor && (
+              <div className="journey-section">
+                <h2 className="journey-title">Your Startup Journey</h2>
+                <div className="journey-steps">
+                  <div className={`journey-step ${projects.length > 0 ? 'completed' : 'active'}`}>
+                    <div className="journey-step-num">01</div>
+                    <div className="journey-step-icon">🚀</div>
+                    <h3>Create a Project</h3>
+                    <p>Submit your idea and get instant AI feedback on market fit</p>
+                    <button className="journey-btn" onClick={() => setActiveTab('projects')}>
+                      {projects.length > 0 ? '✓ View Projects' : 'Get Started →'}
+                    </button>
+                  </div>
+                  <div className={`journey-step ${chatUsers.length > 0 ? 'completed' : ''}`}>
+                    <div className="journey-step-num">02</div>
+                    <div className="journey-step-icon">🤝</div>
+                    <h3>Find Your Team</h3>
+                    <p>Connect with co-founders, developers, and designers</p>
+                    <button className="journey-btn" onClick={() => setActiveTab('network')}>
+                      {chatUsers.length > 0 ? '✓ View Network' : 'Find Team →'}
+                    </button>
+                  </div>
+                  <div className="journey-step">
+                    <div className="journey-step-num">03</div>
+                    <div className="journey-step-icon">🎓</div>
+                    <h3>Get Mentored</h3>
+                    <p>Request guidance from experienced startup mentors</p>
+                    <button className="journey-btn" onClick={() => setActiveTab('mentorship')}>
+                      Find Mentor →
+                    </button>
+                  </div>
+                  <div className={`journey-step ${fundingApplications.length > 0 ? 'completed' : ''}`}>
+                    <div className="journey-step-num">04</div>
+                    <div className="journey-step-icon">💰</div>
+                    <h3>Apply for Funding</h3>
+                    <p>Explore grants and funding opportunities for your startup</p>
+                    <button className="journey-btn" onClick={() => setActiveTab('funding')}>
+                      {fundingApplications.length > 0 ? '✓ View Applications' : 'Explore →'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             </div>
         )}
@@ -594,6 +667,10 @@ useEffect(() => {
 )}
 {activeTab === 'mentorship' && (
   <Mentorship userRole={user.role} />
+)}
+
+{activeTab === 'matchmaking' && (
+  <Matchmaking userId={user.id} userRole={user.role} />
 )}
 
       </main>

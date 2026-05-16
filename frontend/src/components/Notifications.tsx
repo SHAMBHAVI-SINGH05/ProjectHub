@@ -23,14 +23,15 @@ interface NotificationItem {
 }
 
 const formatNotificationTime = (value: string) => {
-  const date = new Date(value);
+  const date = new Date(value.endsWith("Z") ? value : value + "Z");
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
+  const now = Date.now();
+  const diff = Math.floor((now - date.getTime()) / 1000);
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} hr ago`;
+  if (diff < 172800) return "yesterday";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 };
 
 export default function Notifications({ userId, token, socket,onOpenNotification }: NotificationsProps) {
@@ -145,21 +146,6 @@ const sortedNotifications = useMemo(
       socket.off("notification_created", handleNotificationCreated);
     };
   }, [socket, userId]);
-   const runInactivityCheck = async () => {
-  try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/notifications/run-inactivity-check`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-
-    const data = await res.json();
-    console.log("Inactivity check result:", data);
-  } catch (error) {
-    console.error("Failed to run inactivity check:", error);
-  }
-};
 
   return (
     <div className="notifications-shell">
@@ -181,10 +167,6 @@ const sortedNotifications = useMemo(
             <button className="notifications-link-btn" onClick={markAllRead}>
               Mark all read
             </button>
-            <button className="notifications-link-btn" onClick={runInactivityCheck}>
-  Run inactivity check
-</button>
-
           </div>
           <div className="notifications-filters">
   {[

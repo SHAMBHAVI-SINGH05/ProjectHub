@@ -55,8 +55,10 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
   if (!token) return;
 
   const s = io(`${import.meta.env.VITE_API_URL}`, {
-  query: { token }
-});
+    query: { token },
+    transports: ['polling', 'websocket'],
+    upgrade: true,
+  });
 
   setSocket(s);
 
@@ -324,10 +326,19 @@ useEffect(() => {
   }
 
   if (type.startsWith("project_") || type.startsWith("task_") || type === "member_joined_project") {
-    if (notification.project_id) {
-      localStorage.setItem("projecthub_open_project_id", notification.project_id);
+    if (isMentor) {
+      setActiveTab("mentorship");
+    } else {
+      if (notification.project_id) {
+        localStorage.setItem("projecthub_open_project_id", notification.project_id);
+      }
+      setActiveTab("projects");
     }
-    setActiveTab("projects");
+    return;
+  }
+
+  if (type === "match_request_received" || type === "match_mutual") {
+    setActiveTab("matchmaking");
     return;
   }
 
@@ -474,31 +485,31 @@ useEffect(() => {
 
             <div className="stats-cards">
               <div className="stat-card">
-                <div className="stat-icon">📊</div>
+                <div className="stat-icon">{isMentor ? '🎓' : '📊'}</div>
                 <div className="stat-info">
-                 <h3>{projects.length}</h3>
-                  <p>Active Projects</p>
+                  <h3>{isMentor ? chatUsers.length : projects.length}</h3>
+                  <p>{isMentor ? 'Students Mentored' : 'Active Projects'}</p>
                 </div>
               </div>
               <div className="stat-card">
                 <div className="stat-icon">👥</div>
                 <div className="stat-info">
                   <h3>{chatUsers.length}</h3>
-                  <p>{isMentor ? 'Mentees' : 'Connections'}</p>
+                  <p>{isMentor ? 'Connections' : 'Connections'}</p>
                 </div>
               </div>
               <div className="stat-card">
-                <div className="stat-icon">💰</div>
+                <div className="stat-icon">{isMentor ? '📝' : '💰'}</div>
                 <div className="stat-info">
-                  <h3>{fundingApplications.length}</h3>
-                  <p>Funding Applications</p>
+                  <h3>{isMentor ? 0 : fundingApplications.length}</h3>
+                  <p>{isMentor ? 'Pending Requests' : 'Funding Applications'}</p>
                 </div>
               </div>
               <div className="stat-card">
                 <div className="stat-icon">⚡</div>
                 <div className="stat-info">
                   <h3>{user.skills?.length || 0}</h3>
-                  <p>{isMentor ? 'Skills Listed' : 'Skills Listed'}</p>
+                  <p>Skills Listed</p>
                 </div>
               </div>
             </div>
@@ -508,23 +519,29 @@ useEffect(() => {
               <div className="action-buttons">
                 {isMentor ? (
                   <>
-                    <button 
+                    <button
                       className="action-btn secondary"
                       onClick={() => setActiveTab('mentorship')}
                     >
                       🧑‍🏫 Review Mentorship Requests
                     </button>
-                    <button 
+                    <button
                       className="action-btn secondary"
                       onClick={() => setActiveTab('network')}
                     >
                       👥 Manage Connections
                     </button>
-                    <button 
+                    <button
                       className="action-btn secondary"
-                      onClick={() => setActiveTab('projects')}
+                      onClick={() => setActiveTab('matchmaking')}
                     >
-                      📁 View My Projects
+                      🔥 Find Students to Mentor
+                    </button>
+                    <button
+                      className="action-btn secondary"
+                      onClick={() => setActiveTab('profile')}
+                    >
+                      👤 Edit My Profile
                     </button>
                   </>
                 ) : (
@@ -653,7 +670,7 @@ useEffect(() => {
 )}
 
 {activeTab === 'matchmaking' && (
-  <Matchmaking userId={user.id} />
+  <Matchmaking userId={user.id} userRole={user.role} />
 )}
 
       </main>

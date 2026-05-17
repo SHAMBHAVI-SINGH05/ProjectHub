@@ -1733,8 +1733,8 @@ const deleteProject = async (projectId: string) => {
       <div className="projects-toolbar">
         <div>
           <p className="workspace-eyebrow">Execution Hub</p>
-          <h1>My Projects</h1>
-          <p className="projects-subtitle">Create, join, and manage projects from one consistent workspace.</p>
+          <h1 className="projects-title-gradient">My Projects</h1>
+          <p className="projects-subtitle">Create, join, and manage your startup projects.</p>
         </div>
 
         <div className="header-buttons">
@@ -1745,7 +1745,7 @@ const deleteProject = async (projectId: string) => {
               if (!showDiscover) fetchAllProjects();
             }}
           >
-            Discover Projects
+            🔍 Discover
           </button>
           <button className="new-project-btn" onClick={() => setShowCreate(!showCreate)}>
             + New Project
@@ -1763,21 +1763,25 @@ const deleteProject = async (projectId: string) => {
       </div>
 
       <div className="projects-summary-grid">
-        <div className="workspace-stat-card">
-          <span>Total Projects</span>
-          <strong>{projects.length}</strong>
+        <div className="proj-stat-card">
+          <span className="proj-stat-icon">📁</span>
+          <strong className="proj-stat-num">{projects.length}</strong>
+          <span className="proj-stat-label">Total Projects</span>
         </div>
-        <div className="workspace-stat-card">
-          <span>Visible Results</span>
-          <strong>{visibleProjects.length}</strong>
+        <div className="proj-stat-card">
+          <span className="proj-stat-icon">🔍</span>
+          <strong className="proj-stat-num">{visibleProjects.length}</strong>
+          <span className="proj-stat-label">Visible Results</span>
         </div>
-        <div className="workspace-stat-card">
-          <span>Active Projects</span>
-          <strong>{activeProjects}</strong>
+        <div className="proj-stat-card">
+          <span className="proj-stat-icon">⚡</span>
+          <strong className="proj-stat-num">{activeProjects}</strong>
+          <span className="proj-stat-label">Active Projects</span>
         </div>
-        <div className="workspace-stat-card">
-          <span>Workspace Ready</span>
-          <strong>{selectedProject ? "1" : "0"}</strong>
+        <div className="proj-stat-card">
+          <span className="proj-stat-icon">✅</span>
+          <strong className="proj-stat-num">{selectedProject ? "1" : "0"}</strong>
+          <span className="proj-stat-label">Workspace Open</span>
         </div>
       </div>
 
@@ -1928,9 +1932,13 @@ const deleteProject = async (projectId: string) => {
       </div>
 
       {!loading && !projectError && visibleProjects.length === 0 && (
-        <div className="workspace-panel projects-empty-state">
-          <h3>No projects found</h3>
-          <p>Create a project or adjust your search to see results here.</p>
+        <div className="projects-empty-state">
+          <div className="projects-empty-icon">🚀</div>
+          <h3>No projects yet</h3>
+          <p>Start building your startup idea — create your first project to track tasks, manage your team, and get AI insights.</p>
+          <button className="new-project-btn" onClick={() => setShowCreate(true)}>
+            + Create Your First Project
+          </button>
         </div>
       )}
     </div>

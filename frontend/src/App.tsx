@@ -40,7 +40,10 @@ const App: React.FC = () => {
           id: profile.id || user?.id || Math.random().toString(36).slice(2, 9),
           name: profile.name || user?.name || '',
           email: profile.email || user?.email || '',
-          role: String(profile.role || user?.role || 'student').trim().toLowerCase()
+          role: String(profile.role || user?.role || 'student').trim().toLowerCase(),
+          skills: profile.skills || user?.skills || [],
+          interests: profile.interests || user?.interests || [],
+          bio: profile.bio || user?.bio || ''
         })
       } catch (err: any) {
         const status = err?.response?.status
@@ -72,7 +75,10 @@ const App: React.FC = () => {
         id: user_id || Math.random().toString(36).slice(2, 9),
         name: userData.name || userData.email.split('@')[0],
         email: userData.email,
-        role: String(userData.role || 'student').trim().toLowerCase()
+        role: String(userData.role || 'student').trim().toLowerCase(),
+        skills: userData.skills || [],
+        interests: userData.interests || [],
+        bio: userData.bio || ''
       })
       window.location.assign('#/')
     } catch (err: any) {
@@ -86,19 +92,24 @@ const App: React.FC = () => {
       const { access_token, user_id, role, name, email: returnedEmail } = resp.data || {}
       if (access_token) localStorage.setItem('csh_token', access_token)
 
-      let profile = { role, name, email: returnedEmail } as any
-      if (!profile.role && access_token) {
-        const profileResp = await axios.get(`${import.meta.env.VITE_API_URL}/api/users/me`, {
-          headers: { Authorization: `Bearer ${access_token}` }
-        })
-        profile = profileResp.data || profile
+      let profile = { role, name, email: returnedEmail, skills: [], interests: [], bio: '' } as any
+      if (access_token) {
+        try {
+          const profileResp = await axios.get(`${import.meta.env.VITE_API_URL}/api/users/me`, {
+            headers: { Authorization: `Bearer ${access_token}` }
+          })
+          profile = { ...profile, ...profileResp.data }
+        } catch { /* use login response data */ }
       }
 
       handleLogin({
         id: user_id || Math.random().toString(36).slice(2, 9),
         name: profile.name || email.split('@')[0],
         email: profile.email || email,
-        role: String(profile.role || 'student').trim().toLowerCase()
+        role: String(profile.role || 'student').trim().toLowerCase(),
+        skills: profile.skills || [],
+        interests: profile.interests || [],
+        bio: profile.bio || ''
       })
       window.location.assign('#/')
     } catch (err: any) {

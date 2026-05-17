@@ -6,11 +6,23 @@ interface ProfileProps {
   user?: User;
 }
 
+const LOOKING_FOR_OPTIONS = ["developer", "designer", "co-founder", "mentor", "investor", "marketer"];
+
 const Profile: React.FC<ProfileProps> = ({ user }) => {
   const [profile, setProfile] = useState<any>(user || null);
   const [editingBio, setEditingBio] = useState(false);
   const [bio, setBio] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Full profile edit state
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [editSkills, setEditSkills] = useState<string[]>([]);
+  const [editInterests, setEditInterests] = useState<string[]>([]);
+  const [editLookingFor, setEditLookingFor] = useState<string[]>([]);
+  const [newSkill, setNewSkill] = useState("");
+  const [newInterest, setNewInterest] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("csh_token");
@@ -67,9 +79,58 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ bio })
     });
-
+    setProfile((p: any) => ({ ...p, bio }));
     setEditingBio(false);
     setSaving(false);
+  };
+
+  const openEditProfile = () => {
+    setEditSkills([...(profile.skills || [])]);
+    setEditInterests([...(profile.interests || [])]);
+    setEditLookingFor([...(profile.lookingFor || [])]);
+    setEditingProfile(true);
+    setSaveMsg("");
+  };
+
+  const addSkill = () => {
+    const v = newSkill.trim();
+    if (v && !editSkills.includes(v)) setEditSkills(prev => [...prev, v]);
+    setNewSkill("");
+  };
+
+  const addInterest = () => {
+    const v = newInterest.trim();
+    if (v && !editInterests.includes(v)) setEditInterests(prev => [...prev, v]);
+    setNewInterest("");
+  };
+
+  const toggleLookingFor = (val: string) => {
+    setEditLookingFor(prev =>
+      prev.includes(val) ? prev.filter(x => x !== val) : [...prev, val]
+    );
+  };
+
+  const saveProfile = async () => {
+    const token = localStorage.getItem("csh_token");
+    setProfileSaving(true);
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/users/update-me`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ skills: editSkills, interests: editInterests, lookingFor: editLookingFor, bio: profile.bio })
+      });
+      setProfile((p: any) => ({ ...p, skills: editSkills, interests: editInterests, lookingFor: editLookingFor }));
+      // refresh Gemini embedding with new profile
+      await fetch(`${import.meta.env.VITE_API_URL}/api/match/embed/refresh`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSaveMsg("Profile saved!");
+      setTimeout(() => { setEditingProfile(false); setSaveMsg(""); }, 1200);
+    } catch {
+      setSaveMsg("Failed to save. Try again.");
+    }
+    setProfileSaving(false);
   };
 
   if (!profile) return (
@@ -94,26 +155,19 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
           </div>
           <p className="profile-email">{profile.email}</p>
 
-          {/* ✅ FIXED BIO SECTION */}
           {editingBio ? (
             <div className="profile-bio-edit">
               <textarea
                 value={bio}
                 onChange={e => setBio(e.target.value)}
-                placeholder="Tell people about yourself — your role, skills, and what you're looking for."
+                placeholder="Tell people about yourself..."
                 rows={3}
               />
               <div className="profile-bio-actions">
                 <button className="p-btn-primary" onClick={saveBio} disabled={saving}>
                   {saving ? "Saving..." : "Save"}
                 </button>
-                <button
-                  className="p-btn-ghost"
-                  onClick={() => {
-                    setEditingBio(false);
-                    setBio(profile.bio || "");
-                  }}
-                >
+                <button className="p-btn-ghost" onClick={() => { setEditingBio(false); setBio(profile.bio || ""); }}>
                   Cancel
                 </button>
               </div>
@@ -121,9 +175,10 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
           ) : (
             <div className="profile-bio-display">
               <p>{profile.bio || "No bio added yet."}</p>
-              <button className="p-btn-ghost" onClick={() => setEditingBio(true)}>
-                Edit Bio
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                <button className="p-btn-ghost" onClick={() => setEditingBio(true)}>Edit Bio</button>
+                <button className="p-btn-primary" onClick={openEditProfile}>✏️ Edit Skills & Interests</button>
+              </div>
             </div>
           )}
         </div>
@@ -199,6 +254,93 @@ const Profile: React.FC<ProfileProps> = ({ user }) => {
           </div>
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      {editingProfile && (
+        <div className="profile-modal-overlay" onClick={() => setEditingProfile(false)}>
+          <div className="profile-modal" onClick={e => e.stopPropagation()}>
+            <div className="profile-modal-header">
+              <h3>Edit Profile</h3>
+              <button className="profile-modal-close" onClick={() => setEditingProfile(false)}>×</button>
+            </div>
+
+            <div className="profile-modal-body">
+              {/* Skills */}
+              <div className="profile-edit-section">
+                <label>Skills</label>
+                <div className="profile-tag-input">
+                  <input
+                    type="text"
+                    value={newSkill}
+                    onChange={e => setNewSkill(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkill())}
+                    placeholder="Type a skill and press Enter"
+                  />
+                  <button onClick={addSkill}>Add</button>
+                </div>
+                <div className="profile-edit-tags">
+                  {editSkills.map(s => (
+                    <span key={s} className="p-tag p-tag-skill">
+                      {s}
+                      <button onClick={() => setEditSkills(prev => prev.filter(x => x !== s))}>×</button>
+                    </span>
+                  ))}
+                  {editSkills.length === 0 && <span className="p-empty-hint">No skills added yet</span>}
+                </div>
+              </div>
+
+              {/* Interests */}
+              <div className="profile-edit-section">
+                <label>Interests</label>
+                <div className="profile-tag-input">
+                  <input
+                    type="text"
+                    value={newInterest}
+                    onChange={e => setNewInterest(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addInterest())}
+                    placeholder="Type an interest and press Enter"
+                  />
+                  <button onClick={addInterest}>Add</button>
+                </div>
+                <div className="profile-edit-tags">
+                  {editInterests.map(i => (
+                    <span key={i} className="p-tag p-tag-interest">
+                      {i}
+                      <button onClick={() => setEditInterests(prev => prev.filter(x => x !== i))}>×</button>
+                    </span>
+                  ))}
+                  {editInterests.length === 0 && <span className="p-empty-hint">No interests added yet</span>}
+                </div>
+              </div>
+
+              {/* Looking For */}
+              <div className="profile-edit-section">
+                <label>Looking For</label>
+                <div className="profile-looking-options">
+                  {LOOKING_FOR_OPTIONS.map(opt => (
+                    <button
+                      key={opt}
+                      className={`profile-looking-chip ${editLookingFor.includes(opt) ? 'active' : ''}`}
+                      onClick={() => toggleLookingFor(opt)}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {saveMsg && <p className={`profile-save-msg ${saveMsg.includes('Failed') ? 'error' : 'success'}`}>{saveMsg}</p>}
+
+              <div className="profile-modal-actions">
+                <button className="p-btn-ghost" onClick={() => setEditingProfile(false)}>Cancel</button>
+                <button className="p-btn-primary" onClick={saveProfile} disabled={profileSaving}>
+                  {profileSaving ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

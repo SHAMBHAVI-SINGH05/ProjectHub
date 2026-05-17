@@ -36,6 +36,7 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState<
   'dashboard' | 'projects' | 'network' | 'ai' | 'funding' | 'chat' | 'profile' | 'mentorship' | 'matchmaking'
 >('dashboard');
+  const [chatBadge, setChatBadge] = useState(0);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [, setConnections] = useState<string[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -64,11 +65,17 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
 
   s.on("connect", () => {
     console.log("✅ Connected to chat server");
-    // register this socket to a personal room for this user so server can push notifications
     try {
       s.emit('register', { user_id: user.id });
     } catch (err) {
       console.warn('Failed to emit register on connect', err);
+    }
+  });
+
+  s.on("receive_message", (data: any) => {
+    const senderId = data.sender_id || data.senderId;
+    if (senderId !== user.id) {
+      setChatBadge(prev => prev + 1);
     }
   });
 
@@ -384,9 +391,20 @@ useEffect(() => {
                 </button>
                 <button
                   className={`nav-item ${activeTab === 'chat' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('chat')}
+                  onClick={() => { setActiveTab('chat'); setChatBadge(0); }}
+                  style={{ position: 'relative' }}
                 >
-                  Chat
+                  💬 Chat
+                  {chatBadge > 0 && (
+                    <span style={{
+                      position: 'absolute', top: '-4px', right: '-4px',
+                      background: 'linear-gradient(135deg,#6366f1,#3b82f6)',
+                      color: 'white', fontSize: '0.6rem', fontWeight: 700,
+                      minWidth: '16px', height: '16px', borderRadius: '999px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      padding: '0 4px'
+                    }}>{chatBadge}</span>
+                  )}
                 </button>
                 <button
                   className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`}
@@ -429,9 +447,20 @@ useEffect(() => {
                 </button>
                 <button
                   className={`nav-item ${activeTab === 'chat' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('chat')}
+                  onClick={() => { setActiveTab('chat'); setChatBadge(0); }}
+                  style={{ position: 'relative' }}
                 >
                   💬 Chat
+                  {chatBadge > 0 && (
+                    <span style={{
+                      position: 'absolute', top: '-4px', right: '-4px',
+                      background: 'linear-gradient(135deg,#6366f1,#3b82f6)',
+                      color: 'white', fontSize: '0.6rem', fontWeight: 700,
+                      minWidth: '16px', height: '16px', borderRadius: '999px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      padding: '0 4px'
+                    }}>{chatBadge}</span>
+                  )}
                 </button>
                 <button
                   className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`}

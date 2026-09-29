@@ -21,7 +21,7 @@ socketio = SocketIO(
 )
 
 mongo_client = pymongo.MongoClient(MONGO_URI)
-db = mongo_client.get_default_database()
+db = mongo_client["projecthub"]
 
 users_collection = db.get_collection("users")
 projects_collection = db.get_collection("projects")

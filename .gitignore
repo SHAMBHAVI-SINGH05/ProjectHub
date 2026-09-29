@@ -28,3 +28,4 @@ backend/rag/indexes/
 # Logs
 *.log
 npm-debug.log*
+*.zip

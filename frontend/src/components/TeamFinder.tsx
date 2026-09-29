@@ -1,6 +1,7 @@
 // src/components/TeamFinder.tsx
 import { useState, useEffect } from 'react';
 import type { User, UserProfile, TeamSearchFilters } from '../types';
+import { apiUrl, getAuthToken } from '../config/api';
 import './TeamFinder.css';
 
 interface TeamFinderProps {
@@ -90,8 +91,12 @@ const [loading,setLoading] = useState(true);
     setConnectionState({ loading: true, error: null, success: null });
     
     try {
-      const token = localStorage.getItem("csh_token");
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/send-connection`, {
+      const token = getAuthToken();
+      if (!token) {
+        throw new Error('Please sign in again before sending a connection request.');
+      }
+
+      const response = await fetch(apiUrl('/api/users/send-connection'), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -136,18 +141,36 @@ const [loading,setLoading] = useState(true);
   useEffect(() => {
     const fetchMatches = async () => {
       try {
-        const token = localStorage.getItem("csh_token");
-        console.log("TOKEN BEING SENT:", token);
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/match`, {
+        const token = getAuthToken();
+        if (!token) {
+          setConnectionState({
+            loading: false,
+            error: 'Please sign in again to view your network.',
+            success: null
+          });
+          setLoading(false);
+          return;
+        }
+
+        const res = await fetch(apiUrl('/api/users/match'), {
           headers: {
             Authorization: `Bearer ${token}`
           }
         });
 
-        if (res.status === 401 || res.status === 404) {
-          localStorage.removeItem("csh_token");
-          window.location.assign("#/signin");
+        if (res.status === 401 || res.status === 422) {
+          setConnectionState({
+            loading: false,
+            error: 'Your session expired. Please sign in again.',
+            success: null
+          });
+          setLoading(false);
           return;
+        }
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to load team matches');
         }
 
         const data = await res.json();
@@ -181,10 +204,14 @@ const [loading,setLoading] = useState(true);
   useEffect(() => {
     const fetchPendingRequests = async () => {
       try {
-        const token = localStorage.getItem("csh_token");
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/connection-requests`, {
+        const token = getAuthToken();
+        if (!token) return;
+
+        const res = await fetch(apiUrl('/api/users/connection-requests'), {
           headers: { Authorization: `Bearer ${token}` }
         });
+        if (!res.ok) return;
+
         const data = await res.json();
         const incoming = (data.requests || []).filter(
           (r: any) => r.to_user_id === currentUser.id
@@ -200,8 +227,10 @@ const [loading,setLoading] = useState(true);
   const handleRequestAction = async (requestId: string, action: 'accept' | 'reject') => {
     setRequestActionLoading(requestId);
     try {
-      const token = localStorage.getItem("csh_token");
-      await fetch(`${import.meta.env.VITE_API_URL}/api/users/connection-requests/${requestId}/${action}`, {
+      const token = getAuthToken();
+      if (!token) throw new Error('Please sign in again before responding to requests.');
+
+      await fetch(apiUrl(`/api/users/connection-requests/${requestId}/${action}`), {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -258,6 +287,12 @@ const [loading,setLoading] = useState(true);
         </div>
       )}
 
+      {connectionState.error && !selectedUser && (
+        <div className="alert alert-error">
+          {connectionState.error}
+        </div>
+      )}
+
       <div className="team-finder-content">
         {/* Search and Filters Sidebar */}
         <div className="filters-sidebar">
@@ -272,7 +307,7 @@ const [loading,setLoading] = useState(true);
           </div>
 
           <div className="filter-section">
-            <h3>Filter by Skills</h3>
+            <h3>🔧 Filter by Skills</h3>
             <p className="filter-hint">Select one or more skills</p>
             <div className="filter-tags">
               {availableSkills.map(skill => (
@@ -297,7 +332,7 @@ const [loading,setLoading] = useState(true);
           </div>
 
           <div className="filter-section">
-            <h3>Filter by Interests</h3>
+            <h3>💡 Filter by Interests</h3>
             <p className="filter-hint">Select one or more interests</p>
             <div className="filter-tags">
               {availableInterests.map(interest => (
@@ -322,7 +357,7 @@ const [loading,setLoading] = useState(true);
           </div>
 
           <div className="filter-section">
-            <h3>Filter by Role</h3>
+            <h3>👔 Filter by Role</h3>
             <select 
               value={filters.role}
               onChange={(e) => setFilters(prev => ({ ...prev, role: e.target.value }))}
@@ -379,7 +414,7 @@ const [loading,setLoading] = useState(true);
                 )}
 
                 <div className="user-skills">
-                  <h4> Skills ({user.skills.length})</h4>
+                  <h4>🔧 Skills ({user.skills.length})</h4>
                   <div className="skill-tags">
                     {user.skills.slice(0, 4).map(skill => (
                       <span key={skill} className="skill-tag">{skill}</span>
@@ -391,7 +426,7 @@ const [loading,setLoading] = useState(true);
                 </div>
 
                 <div className="user-interests">
-                  <h4>Interests ({user.interests.length})</h4>
+                  <h4>💡 Interests ({user.interests.length})</h4>
                   <div className="interest-tags">
                     {user.interests.slice(0, 3).map(interest => (
                       <span key={interest} className="interest-tag">{interest}</span>
@@ -415,7 +450,7 @@ const [loading,setLoading] = useState(true);
                   onClick={() => setSelectedUser(user)}
                   title={`Send connection request to ${user.name}`}
                 >
-                  Connect with {user.name.split(' ')[0]}
+                  🤝 Connect with {user.name.split(' ')[0]}
                 </button>
               </div>
             ))
